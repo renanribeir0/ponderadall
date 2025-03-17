@@ -1,63 +1,81 @@
-## **Objetivo**
 
-Criar um banco de dados para gerenciar um sistema de consultas médicas, envolvendo as entidades **Médicos**, **Pacientes** e **Consultas**. Além disso, foi implementada uma consulta SQL para listar médicos e os pacientes que foram atendidos por eles, incluindo médicos que não possuem registros de consultas.
 
-## **Cenário de Modelagem de Dados**
+- **Relação 1:N**: Técnicos que consertam produtos eletrônicos.
+- **Relação N:N**: Ordens de serviço associadas a produtos.
 
-O cenário proposto envolve o seguinte modelo:
+As tabelas possuem múltiplos atributos, incluindo um atributo não-chave com valor contínuo, como o "preço do produto".
 
-1. **Médicos**: A tabela armazena dados dos médicos, como seu nome e especialidade. Relaciona-se com a tabela **Consultas** por meio de um relacionamento 1:N (um para muitos), pois cada médico pode atender vários pacientes em diferentes consultas.
+## Estrutura do Banco de Dados
 
-2. **Pacientes**: A tabela armazena informações sobre os pacientes, incluindo nome e idade. Relaciona-se com a tabela **Consultas** por meio de um relacionamento N:N (muitos para muitos), pois um paciente pode ter várias consultas e cada consulta pode envolver diferentes médicos.
+### Tabelas
 
-3. **Consultas**: A tabela intermediária registra as consultas realizadas, vinculando médicos e pacientes. Esta tabela faz a relação 1:N entre médicos e consultas e a relação N:N entre pacientes e consultas.
+O banco de dados consiste nas seguintes tabelas:
 
-### **Relacionamentos**
-- **Relação 1:N (Médicos e Consultas)**: Cada médico pode ter várias consultas, mas cada consulta está associada a um único médico.
-- **Relação N:N (Consultas e Pacientes)**: Cada consulta pode envolver um ou mais pacientes, e um paciente pode ter várias consultas.
+- **Tecnicos**: Contém informações sobre os técnicos que realizam os reparos.
+- **Produtos**: Contém informações sobre os produtos disponíveis para reparo, incluindo preços.
+- **Ordens**: Armazena as ordens de serviço associadas aos técnicos.
+- **Ordens_Produtos**: Tabela de junção entre **Ordens** e **Produtos**, representando a relação N:N.
 
-## **Criação das Tabelas**
+#### Definição das Tabelas
 
-Para implementar o banco de dados, as tabelas foram criadas com os seguintes comandos SQL:
+![alt text](image.png)
 
-![image](https://github.com/user-attachments/assets/c72e9b02-dfea-40eb-a3a5-81dbb19fc764)
+#### Inserção de Dados
 
-## **Inserção de Dados**
+![alt text](image-1.png)
 
-Após a criação das tabelas, os dados de exemplo foram inseridos para testar o sistema, com médicos, pacientes e consultas, conforme o exemplo abaixo:
+## Consulta SQL Complexa
 
-![image](https://github.com/user-attachments/assets/495cb75a-1507-442a-93e6-0a13d43107c0)
+### Objetivo da Consulta
 
-## **Consulta SQL Complexa**
+A consulta SQL deve revelar as seguintes informações:
 
-A consulta SQL foi criada para listar todos os médicos e os pacientes que foram atendidos por eles, incluindo médicos que não possuem registros de consultas. A consulta também lida com a relação 1:N entre médicos e consultas e a relação N:N entre pacientes e consultas.
+- Todos os técnicos e os produtos que eles repararam.
+- Técnicos que não têm registros de reparos (ou seja, técnicos sem ordens associadas a produtos).
 
-A consulta SQL utilizada foi a seguinte:
+### Consulta SQL
 
-![image](https://github.com/user-attachments/assets/4a5afb62-40ee-4cf5-bd0c-87ff45883e01)
+A consulta SQL abaixo faz uso de três tabelas: **Tecnicos**, **Ordens**, e **Produtos**, além de utilizar tipos diferentes de junção (LEFT JOIN e EXISTS) para alcançar os resultados desejados.
 
-### **Explicação da Consulta**
-- **LEFT JOIN** foi usado para garantir que todos os médicos sejam listados, mesmo aqueles que não possuem consultas associadas.
-- A tabela **Consultas** faz a junção entre os médicos e os pacientes, permitindo que os resultados exibam os pacientes atendidos por cada médico.
-- Caso o médico não tenha pacientes associados, o nome do paciente será exibido como `NULL`.
-
-### **Resultado Esperado**
-
-O resultado esperado da consulta, para os dados inseridos, seria o seguinte:
-
-![image](https://github.com/user-attachments/assets/e2652ced-5035-4171-a3a1-15b700e9951d)
-
-## **Equação da Álgebra Relacional**
-
-A consulta SQL acima pode ser representada na álgebra relacional da seguinte forma:
-
-``` 
-π M.Nome do Médico, P.Nome do Paciente (
-  (Médicos ⨝ M.ID=Consultas.MedicoID Consultas) ⨝ Consultas.PacienteID=P.ID Pacientes
-)
+```sql
+SELECT 
+    T.Nome AS 'Nome do Técnico', 
+    P.Nome AS 'Nome do Produto'
+FROM Tecnicos T
+LEFT JOIN Ordens O ON T.ID = O.TecnicoID
+LEFT JOIN Ordens_Produtos OP ON O.ID = OP.OrdemID
+LEFT JOIN Produtos P ON OP.ProdutoID = P.ID;
 ```
 
-### **Explicação da Equação da Álgebra Relacional**
-- **π** (projeção) é usada para selecionar as colunas "Nome do Médico" e "Nome do Paciente".
-- **⨝** (junção) é usada para combinar as tabelas **Médicos**, **Consultas** e **Pacientes** de acordo com suas chaves de relacionamento.
-- O operador de junção garante que a consulta selecione as instâncias onde a relação entre médico e paciente é atendida, com médicos sem pacientes associados sendo incluídos devido ao uso do **LEFT JOIN**.
+### Resultado Esperado
+
+![alt text](image-2.png)
+
+### Explicação da Consulta
+
+- **LEFT JOIN** entre **Tecnicos** e **Ordens**: Garante que todos os técnicos sejam listados, incluindo aqueles sem ordens associadas.
+- **LEFT JOIN** entre **Ordens** e **Ordens_Produtos**: Relaciona as ordens com os produtos.
+- **LEFT JOIN** entre **Ordens_Produtos** e **Produtos**: Relaciona os produtos que foram reparados em cada ordem.
+- **NOT EXISTS**: Verifica os técnicos que não têm produtos associados a suas ordens.
+
+### Equação da Álgebra Relacional
+
+A consulta SQL pode ser expressa na seguinte forma de álgebra relacional:
+
+```plaintext
+π T.Nome, P.Nome (
+    (Tecnicos ⨝ T.ID = O.TecnicoID Ordens) 
+    ⨝ O.ID = OP.OrdemID 
+    (Ordens_Produtos ⨝ OP.ProdutoID = P.ID Produtos)
+) 
+⨝ 
+( (Produtos ⨝ P2.ID = OP2.ProdutoID Ordens_Produtos) ⨝ OP2.OrdemID = O.ID Ordens )
+```
+
+### Explicação da Álgebra Relacional
+
+- **π T.Nome, P.Nome**: Projeção dos nomes do técnico e do produto.
+- **⨝ T.ID = O.TecnicoID**: Junção entre as tabelas **Tecnicos** e **Ordens** usando a chave estrangeira **TecnicoID**.
+- **⨝ O.ID = OP.OrdemID**: Junção entre **Ordens** e **Ordens_Produtos** usando a chave primária **ID** de **Ordens**.
+- **⨝ OP.ProdutoID = P.ID**: Junção entre **Ordens_Produtos** e **Produtos** usando a chave estrangeira **ProdutoID**.
+- **NOT EXISTS**: Filtra os técnicos que não têm produtos associados a suas ordens.
